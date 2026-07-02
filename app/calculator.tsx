@@ -10,7 +10,7 @@ export function Calculator() {
 
   const hoursPerWeek = estimateHoursSaved(prsPerWeek, automationRate);
   const hoursPerYear = Math.round(hoursPerWeek * 52);
-  const dollarsPerWeek = estimateDollarsSaved(hoursPerWeek, 120);
+  const dollarsPerWeek = estimateDollarsSaved(hoursPerWeek);
 
   return (
     <section className="card" aria-label="ROI calculator">
