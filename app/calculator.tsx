@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { estimateHoursSaved } from "@/lib/roi";
+import { estimateDollarsSaved } from "@/lib/savings";
 
 export function Calculator() {
   const [prsPerWeek, setPrsPerWeek] = useState(40);
@@ -9,6 +10,7 @@ export function Calculator() {
 
   const hoursPerWeek = estimateHoursSaved(prsPerWeek, automationRate);
   const hoursPerYear = Math.round(hoursPerWeek * 52);
+  const dollarsPerWeek = estimateDollarsSaved(hoursPerWeek, 120);
 
   return (
     <section className="card" aria-label="ROI calculator">
@@ -50,6 +52,9 @@ export function Calculator() {
         </div>
         <div className="result-secondary">
           ≈ {hoursPerYear.toLocaleString()} hours / year
+        </div>
+        <div className="result-secondary">
+          ≈ ${dollarsPerWeek.toLocaleString()} saved / week
         </div>
       </div>
     </section>
