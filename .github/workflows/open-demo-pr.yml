@@ -1,0 +1,90 @@
+name: Open Demo PR
+
+# On-demand GitHub Action that drives the Gitar demo.
+#
+# It seeds a fresh, uniquely-named lib/generated/roi-<id>.ts helper (via
+# scripts/new-helper.mjs) carrying one real type bug plus a few review smells,
+# then opens a PR authored by a GitHub App so that:
+#   - Gitar reviews it against .gitar/review/utility-standards.md,
+#   - CI (next build) goes red on the type bug,
+#   - Gitar fixes the findings, CI goes green, and the PR auto-merges per
+#     .gitar/config/approve.md.
+#
+# Prereqs in the repo (or fork) running this:
+#   - A GitHub App installed with Contents:write + Pull requests:write.
+#   - Secrets: DEMO_APP_ID, DEMO_APP_PRIVATE_KEY.
+# The App token (not the default GITHUB_TOKEN) is required so the PR triggers CI.
+#
+# Re-runnable with no limit: each run adds a brand-new file, so nothing ever
+# collides and a fork can keep pulling upstream without conflicts.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  open-demo-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate App token
+        id: token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.DEMO_APP_ID }}
+          private-key: ${{ secrets.DEMO_APP_PRIVATE_KEY }}
+
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ steps.token.outputs.token }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Seed helper
+        id: seed
+        run: node scripts/new-helper.mjs
+
+      - name: Push branch and open PR
+        env:
+          GH_TOKEN: ${{ steps.token.outputs.token }}
+        run: |
+          set -euo pipefail
+
+          git config user.name "Gitar"
+          git config user.email "noreply@gitar.ai"
+
+          NAME="${{ steps.seed.outputs.name }}"
+          FILE="${{ steps.seed.outputs.file }}"
+          BRANCH="gitar-demo-${NAME}"
+
+          git checkout -b "$BRANCH"
+          git add "$FILE"
+          git commit -m "Add ROI hours-saved helper for pricing calculator"
+          git push origin "$BRANCH"
+
+          # Open with an empty body on purpose — Gitar writes the summary as
+          # part of the demo, so seeding one here would just get overwritten.
+          URL=$(gh pr create \
+            --base main \
+            --head "$BRANCH" \
+            --title "Add ROI hours-saved helper for pricing calculator" \
+            --body "")
+
+          echo "PR opened ($FILE): $URL"
+          {
+            echo "### Demo PR opened"
+            echo "- File: \`$FILE\`"
+            echo "- PR: $URL"
+          } >> "$GITHUB_STEP_SUMMARY"
