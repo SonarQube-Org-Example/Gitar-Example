@@ -13,9 +13,9 @@ const DEFAULT_HOURLY_RATE = 75;
  */
 export const estimateDollarsSaved = (
   hoursSaved: number,
-  hourlyRate: number,
+  hourlyRate: number = DEFAULT_HOURLY_RATE,
 ): number => {
-  const dollarsSaved = hoursSaved + DEFAULT_HOURLY_RATE;
+  const dollarsSaved = hoursSaved * hourlyRate;
 
   return Math.round(dollarsSaved);
 };
